@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Validation - Dashboard</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background: #f4f6f8; }
+        h2 { color: #333; }
+        .card { background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        form { display: flex; flex-direction: column; gap: 10px; }
+        label { font-weight: bold; font-size: 14px; color: #555; }
+        input, button { padding: 8px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #007bff; color: white; cursor: pointer; border: none; font-weight: bold; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 10px; padding: 10px; background: #eee; border-radius: 4px; white-space: pre-wrap; font-family: monospace; display: none; }
+        .nav { margin-bottom: 20px; }
+        .nav a { text-decoration: none; color: #007bff; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="nav"><a href="/dashboard">&larr; Back to Dashboard</a></div>
+    <div class="card">
+        <h2>PDF Validation</h2>
+        <form id="form-pdf-valid" onsubmit="submitForm(event, '/pdf-is-valid', 'json')">
+            <label>Upload PDF:</label>
+            <input type="file" name="pdf" accept="application/pdf" required>
+            <button type="submit">Check if Valid</button>
+            <div class="result"></div>
+        </form>
+    </div>
+    <script>
+        async function submitForm(event, endpoint) {
+            event.preventDefault();
+            const form = event.target;
+            const button = form.querySelector('button');
+            const resultDiv = form.querySelector('.result');
+            
+            button.disabled = true;
+            resultDiv.style.display = 'none';
+
+            try {
+                const response = await fetch(endpoint, { method: 'POST', body: new FormData(form) });
+                const data = await response.json();
+                resultDiv.innerText = JSON.stringify(data, null, 2);
+                resultDiv.style.display = 'block';
+            } catch (err) {
+                resultDiv.innerText = 'Error: ' + err.message;
+                resultDiv.style.display = 'block';
+            } finally {
+                button.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

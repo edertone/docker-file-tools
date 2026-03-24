@@ -1,0 +1,15 @@
+{
+    "scripts": {
+        "rebuild-start": "cd docker && docker build -t file-tools . && docker run -p 5001:5001 file-tools",
+        "test": "npx mocha --parallel=false",
+        "format": "npx prettier --write \"**/*.js\"",
+        "format:file": "prettier --write",
+        "format:check": "prettier --check \"**/*.js\""
+    },
+    "devDependencies": {
+        "form-data": "^4.0.5",
+        "mocha": "^11.7.5",
+        "node-fetch": "^3.3.2",
+        "prettier": "^3.7.4"
+    }
+}

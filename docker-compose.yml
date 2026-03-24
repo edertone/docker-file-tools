@@ -1,0 +1,8 @@
+services:
+    file-tools:
+        build: ./docker
+        ports:
+            - '5001:5001'
+        volumes:
+            - ./data/cache-folder:/app/file-tools-cache
+            - ./data/logs-folder:/app/logs

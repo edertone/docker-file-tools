@@ -1,0 +1,7 @@
+{
+  "spec": "tests/**/*.js",
+  "extension": ["js"],
+  "package": "./package.json",
+  "timeout": 5000,
+  "ui": "bdd"
+}

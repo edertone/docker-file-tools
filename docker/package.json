@@ -1,0 +1,14 @@
+{
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.7",
+    "hono": "^4.11.3",
+    "better-sqlite3": "^12.5.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

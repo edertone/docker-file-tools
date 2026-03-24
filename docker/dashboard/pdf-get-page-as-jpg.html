@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Page to JPG - Dashboard</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background: #f4f6f8; }
+        h2 { color: #333; }
+        .card { background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        form { display: flex; flex-direction: column; gap: 10px; }
+        label { font-weight: bold; font-size: 14px; color: #555; }
+        input, button { padding: 8px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #007bff; color: white; cursor: pointer; border: none; font-weight: bold; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 10px; padding: 10px; background: #eee; border-radius: 4px; white-space: pre-wrap; font-family: monospace; display: none; }
+        .img-preview { max-width: 100%; margin-top: 10px; display: none; }
+        .nav { margin-bottom: 20px; }
+        .nav a { text-decoration: none; color: #007bff; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="nav"><a href="/dashboard">&larr; Back to Dashboard</a></div>
+    <div class="card">
+        <h2>PDF Page to JPG</h2>
+        <form id="form-pdf-to-jpg" onsubmit="submitForm(event, '/pdf-get-page-as-jpg', 'blob')">
+            <label>Upload PDF:</label>
+            <input type="file" name="pdf" accept="application/pdf" required>
+            <label>Page Number (1-based):</label>
+            <input type="number" name="page" required>
+            <label>JPEG Quality (default 75):</label>
+            <input type="number" name="jpegQuality" placeholder="75">
+            <label>Custom Width (px):</label>
+            <input type="number" name="width" placeholder="">
+            <label>Custom Height (px):</label>
+            <input type="number" name="height" placeholder="">
+            <button type="submit">Extract Page as JPG</button>
+            <img class="img-preview" alt="Resulting Image">
+            <div class="result"></div>
+        </form>
+    </div>
+    <script>
+        async function submitForm(event, endpoint) {
+            event.preventDefault();
+            const form = event.target;
+            const button = form.querySelector('button');
+            const resultDiv = form.querySelector('.result');
+            const imgPreview = form.querySelector('.img-preview');
+            
+            button.disabled = true;
+            resultDiv.style.display = 'none';
+            if (imgPreview) imgPreview.style.display = 'none';
+
+            try {
+                const response = await fetch(endpoint, { method: 'POST', body: new FormData(form) });
+                if (!response.ok) throw new Error((await response.json()).error || 'Server error');
+
+                const blob = await response.blob();
+                const objectUrl = URL.createObjectURL(blob);
+                if (blob.type.startsWith('image/')) {
+                    imgPreview.src = objectUrl;
+                    imgPreview.style.display = 'block';
+                }
+            } catch (err) {
+                resultDiv.innerText = 'Error: ' + err.message;
+                resultDiv.style.display = 'block';
+            } finally {
+                button.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
