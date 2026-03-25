@@ -100,6 +100,54 @@ app.post('/pdf-get-page-as-jpg', async c => {
     });
 });
 
+// PDF Merge
+app.post('/pdf-merge', async c => {
+    // Parse body keeping all values for duplicate keys as arrays
+    const contentType = c.req.header('content-type') || '';
+    let body;
+    if (contentType.includes('application/json')) {
+        body = await c.req.json().catch(() => ({}));
+    } else {
+        body = await c.req.parseBody({ all: true }).catch(() => ({}));
+    }
+
+    let buffers = [];
+    const files = Array.isArray(body['pdfs']) ? body['pdfs'] : (body['pdfs'] ? [body['pdfs']] : []);
+
+    for (const val of files) {
+        if (typeof val === 'object' && val.arrayBuffer) {
+            buffers.push(Buffer.from(await val.arrayBuffer()));
+        } else if (typeof val === 'string') {
+            buffers.push(Buffer.from(val, 'base64')); // Attempt base64 decoding if json
+        }
+    }
+
+    // Also support multiple keys like pdf1, pdf2...
+    if (buffers.length === 0) {
+        const sortedKeys = Object.keys(body).filter(k => k.startsWith('pdf') && k !== 'pdfs').sort();
+        for (const k of sortedKeys) {
+            const valList = Array.isArray(body[k]) ? body[k] : [body[k]];
+            for (const val of valList) {
+                if (typeof val === 'object' && val.arrayBuffer) {
+                    buffers.push(Buffer.from(await val.arrayBuffer()));
+                } else if (typeof val === 'string') {
+                    buffers.push(Buffer.from(val, 'base64'));
+                }
+            }
+        }
+    }
+
+    if (buffers.length < 2) {
+        throw new Error("At least two PDF files are required to merge. Provide them as multiple 'pdf1', 'pdf2' fields or a 'pdfs' array.");
+    }
+
+    const mergedBuffer = await helper.mergePdfFiles(buffers);
+
+    return c.body(mergedBuffer, 200, {
+        'Content-Type': 'application/pdf'
+    });
+});
+
 // HTML to PDF
 const handleHtmlToPdf = async (c, returnBase64) => {
     const body = await helper.parseBodyVariables(c);

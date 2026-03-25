@@ -2,10 +2,10 @@
 
 ## Build & Run Locally
 
-Open a cmd at the /file-tools folder and run:
+Open a cmd at the root folder and run:
 
 ```bash
-npm run rebuild-start
+docker compose up -d --build
 ```
 
 ## Run tests
@@ -20,15 +20,14 @@ npm run test
 
 ## Publish to docker hub
 
+- Commit files to github and create a version tag
 - Make sure docker is running
 - Open a **power shell** terminal at the file-tools/docker folder
 - Run all this code at once:
 
 ```powershell
 docker login; `
-$VERSION = (Get-Content ../VERSION).Trim(); `
+$VERSION = your-tag-version; `
 docker build -t edertone/file-tools:$VERSION .; `
 docker push edertone/file-tools:$VERSION
 ```
-
-- Now increase the value on the file-tools/VERSION file and commit it to Git indicating which version was published

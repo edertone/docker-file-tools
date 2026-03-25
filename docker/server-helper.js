@@ -93,6 +93,57 @@ async function countPdfPages(pdfBuffer) {
 }
 
 /**
+ * Merges multiple PDF buffers into a single PDF.
+ * @param {Buffer[]} pdfBuffers - Array of PDF file buffers
+ * @returns {Promise<Buffer>} The merged PDF as a Buffer.
+ */
+async function mergePdfFiles(pdfBuffers) {
+    if (!Array.isArray(pdfBuffers) || pdfBuffers.length < 2) {
+        throw new Error('At least two PDF files are required to merge');
+    }
+
+    const tempDir = os.tmpdir();
+    const tempFiles = [];
+    const outputPdfPath = path.join(tempDir, `${crypto.randomUUID()}_merged.pdf`);
+
+    try {
+        // Write all standard buffers to temp files
+        for (let i = 0; i < pdfBuffers.length; i++) {
+            const buf = pdfBuffers[i];
+            if (!buf || buf.length < 5 || buf.slice(0, 5).toString() !== '%PDF-') {
+                throw new Error(`Invalid PDF buffer at index ${i}`);
+            }
+            const tempPath = path.join(tempDir, `${crypto.randomUUID()}_${i}.pdf`);
+            await fs.writeFile(tempPath, buf);
+            tempFiles.push(tempPath);
+        }
+
+        const args = [
+            '-dBATCH',
+            '-dNOPAUSE',
+            '-q',
+            '-sDEVICE=pdfwrite',
+            `-sOutputFile=${outputPdfPath}`,
+            ...tempFiles
+        ];
+
+        await new Promise((resolve, reject) => {
+            execFile(GHOSTSCRIPT_EXECUTABLE, args, (error, stdout, stderr) => {
+                if (error) return reject(new Error(`PDF merge failed: ${stderr || error.message}`));
+                resolve(stdout);
+            });
+        });
+
+        return await fs.readFile(outputPdfPath);
+    } finally {
+        for (const file of tempFiles) {
+            await fs.unlink(file).catch(() => {});
+        }
+        await fs.unlink(outputPdfPath).catch(() => {});
+    }
+}
+
+/**
  * Converts a specific page of a PDF buffer to a JPEG image with custom dimensions.
  * Calculates missing width/height proportionally if only one is provided.
  * @param {Buffer} pdfBuffer - The PDF file buffer.
@@ -491,5 +542,6 @@ module.exports = {
     isValidPdf,
     getPdfPageAsJpg,
     convertImageToJpg,
+    mergePdfFiles,
     getCacheManager
 };

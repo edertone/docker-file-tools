@@ -7,6 +7,7 @@
 - [/pdf-is-valid (Check if a file is a valid PDF)](#pdf-is-valid)
 - [/pdf-count-pages (Count the number of pages on a PDF)](#pdf-count-pages)
 - [/pdf-get-page-as-jpg (Extract a page from a PDF as a JPG image)](#pdf-get-page-as-jpg)
+- [/pdf-merge (Merge multiple PDF files into one)](#pdf-merge)
 - [/html-to-pdf-binary (Convert html code to a binary PDF file)](#html-to-pdf-binary)
 - [/html-to-pdf-base64 (Convert html code to a base 64 encoded PDF file)](#html-to-pdf-base64)
 
@@ -111,6 +112,40 @@ const response = await fetch('http://localhost:5001/pdf-get-page-as-jpg', {
 });
 const imageBuffer = await response.arrayBuffer();
 // Save or process the JPEG image
+```
+
+---
+
+### /pdf-merge
+
+Merge two or more PDF files sequentially into a single PDF file.
+
+**Method:** `POST`
+
+**Content-Type:** `multipart/form-data`
+
+**Parameters:**
+
+- PDF files must be provided either as an array named `pdfs` (or `pdfs[]`), or as sequentially named variables (e.g., `pdf1`, `pdf2`, `pdf3`, etc.).
+- There must be at least two valid PDF files for the merge operation to complete successfully.
+
+**Response:**
+
+- PDF document as binary data (`Content-Type: application/pdf`)
+
+**Example (Node.js):**
+
+```javascript
+const formData = new FormData();
+formData.append('pdfs', pdfBuffer1, 'file1.pdf');
+formData.append('pdfs', pdfBuffer2, 'file2.pdf');
+
+const response = await fetch('http://localhost:5001/pdf-merge', {
+    method: 'POST',
+    body: formData
+});
+const mergedPdfBuffer = await response.arrayBuffer();
+// Save or process the merged PDF file
 ```
 
 ---
