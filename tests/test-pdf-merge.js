@@ -62,20 +62,10 @@ describe('PDF Merge API', function () {
         fs.writeFileSync(path.join(OUT_DIR, 'merged-array.pdf'), result.buffer);
     });
 
-    it('should merge two PDFs using pdf1, pdf2 parameters', async function () {
-        const result = await mergePdfs([
-            { key: 'pdf1', filename: 'sample1.pdf' },
-            { key: 'pdf2', filename: 'sample4.pdf' }
-        ]);
-        assert.strictEqual(result.statusCode, 200, 'Expected HTTP 200');
-        assert.ok(result.buffer.length > 1000, 'PDF buffer should not be empty');
-        fs.writeFileSync(path.join(OUT_DIR, 'merged-keys.pdf'), result.buffer);
-    });
-
     it('should throw an error if missing pdfs', async function () {
         try {
             await mergePdfs([
-                { key: 'pdf1', filename: 'sample1.pdf' }
+                { key: 'pdfs', filename: 'sample1.pdf' }
             ]);
             assert.fail('Should have thrown error');
         } catch (e) {

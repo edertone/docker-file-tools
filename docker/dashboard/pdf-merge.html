@@ -24,13 +24,13 @@
         <h2>/pdf-merge (Merge multiple PDF files into one)</h2>
         <form id="form-pdf-merge" onsubmit="submitForm(event, '/pdf-merge', 'blob')">
             <label>Upload First PDF:</label>
-            <input type="file" name="pdf1" accept="application/pdf" required>
+            <input type="file" name="pdfs" accept="application/pdf" required>
             
             <label>Upload Second PDF:</label>
-            <input type="file" name="pdf2" accept="application/pdf" required>
+            <input type="file" name="pdfs" accept="application/pdf" required>
 
             <label>Upload Third PDF (optional):</label>
-            <input type="file" name="pdf3" accept="application/pdf">
+            <input type="file" name="pdfs" accept="application/pdf">
 
             <button type="submit">Merge PDFs</button>
             <div class="result"></div>
@@ -51,12 +51,12 @@
 
             // Filter out empty file inputs to avoid sending invalid buffers
             const formData = new FormData();
-            for (let i = 1; i <= 3; i++) {
-                const fileInput = form.querySelector(`[name="pdf${i}"]`);
-                if (fileInput.files.length > 0) {
-                    formData.append('pdfs', fileInput.files[0]);
+            const fileInputs = form.querySelectorAll('input[name="pdfs"]');
+            fileInputs.forEach(input => {
+                if (input.files.length > 0) {
+                    formData.append('pdfs', input.files[0]);
                 }
-            }
+            });
 
             try {
                 const response = await fetch(endpoint, { method: 'POST', body: formData });

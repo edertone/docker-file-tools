@@ -126,7 +126,7 @@ Merge two or more PDF files sequentially into a single PDF file.
 
 **Parameters:**
 
-- PDF files must be provided either as an array named `pdfs` (or `pdfs[]`), or as sequentially named variables (e.g., `pdf1`, `pdf2`, `pdf3`, etc.).
+- PDF files must be provided as an array named `pdfs` (or `pdfs[]`).
 - There must be at least two valid PDF files for the merge operation to complete successfully.
 
 **Response:**
