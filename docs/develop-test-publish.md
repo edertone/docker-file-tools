@@ -10,9 +10,9 @@ docker compose up -d --build
 
 ## Run tests
 
-- Make sure /file-tools packages are installed (npm ci)
-- Make sure the container is running on your local machine (npm run rebuild-start)
-- Open another cmd at file-tools folder and run:
+- Make sure test packages are installed (npm ci)
+- Make sure the container is running on your local machine
+- Open a cmd at file-tools root folder and run:
 
 ```bash
 npm run test

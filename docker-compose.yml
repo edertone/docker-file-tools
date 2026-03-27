@@ -1,3 +1,5 @@
+# Use this docker compose file to test the file tools service locally.
+# It will build the image from the Dockerfile in the docker folder and run the container with the specified ports and volume mappings.
 services:
     file-tools:
         build: ./docker
