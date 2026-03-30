@@ -59,7 +59,7 @@ RUN apk add --no-cache \
 COPY --from=builder --chown=converter:converter /app/node_modules ./node_modules
 
 # Copy application files
-COPY --chown=converter:converter server/package.json server/server.js server/server-helper.js start.sh ./
+COPY --chown=converter:converter server/package.json server/server*.js start.sh ./
 COPY --chown=converter:converter dashboard/ ./dashboard/
 
 # Switch to non-root user

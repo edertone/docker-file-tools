@@ -2,10 +2,41 @@ const { serve } = require('@hono/node-server');
 const { Hono } = require('hono');
 const { createReadStream } = require('node:fs');
 const { stream } = require('hono/streaming');
-const helper = require('./server-helper.js');
+const pdfUtils = require('./server-pdf.js');
+const imageUtils = require('./server-image.js');
+const cacheUtils = require('./server-cache.js');
 
 const app = new Hono();
 const PORT = 5001;
+
+/**
+ * Helper to parse body variables regardless of Content-Type.
+ * Supports: application/json, multipart/form-data, application/x-www-form-urlencoded
+ * @param {import('hono').Context} c
+ */
+async function parseBodyVariables(c) {
+    const contentType = c.req.header('content-type') || '';
+    if (contentType.includes('application/json')) {
+        return await c.req.json().catch(() => ({})); // Return empty obj on invalid JSON
+    }
+    return await c.req.parseBody();
+}
+
+/**
+ * Helper to extract a file buffer from the parsed body.
+ * Handles both Hono File objects (multipart) and Base64/String data (JSON/Text).
+ */
+async function getFileAsBuffer(body, key) {
+    const val = body[key];
+    if (!val) throw new Error(`Missing POST variable '${key}'`);
+
+    // If it's a file upload (Object with arrayBuffer method)
+    if (typeof val === 'object' && val.arrayBuffer) {
+        return Buffer.from(await val.arrayBuffer());
+    }
+    // If it's a regular string field (from JSON or Text field)
+    return Buffer.from(String(val));
+}
 
 // Dashboard HTML
 app.get('/dashboard', async c => {
@@ -45,15 +76,15 @@ app.onError((err, c) => {
 
 // Image to JPG
 app.post('/image-to-jpg', async c => {
-    const body = await helper.parseBodyVariables(c);
-    const imageBuffer = await helper.getFileAsBuffer(body, 'image');
+    const body = await parseBodyVariables(c);
+    const imageBuffer = await getFileAsBuffer(body, 'image');
 
     const options = {
         jpegQuality: body['jpegQuality'] ? parseInt(body['jpegQuality'], 10) : 75,
         transparentColor: body['transparentColor'] || '#FFFFFF'
     };
 
-    const jpgBuffer = await helper.convertImageToJpg(imageBuffer, options);
+    const jpgBuffer = await imageUtils.convertImageToJpg(imageBuffer, options);
 
     return c.body(jpgBuffer, 200, {
         'Content-Type': 'image/jpeg'
@@ -62,26 +93,26 @@ app.post('/image-to-jpg', async c => {
 
 // PDF Validation
 app.post('/pdf-is-valid', async c => {
-    const body = await helper.parseBodyVariables(c);
-    const pdfBuffer = await helper.getFileAsBuffer(body, 'pdf');
+    const body = await parseBodyVariables(c);
+    const pdfBuffer = await getFileAsBuffer(body, 'pdf');
 
-    const isValid = await helper.isValidPdf(pdfBuffer);
+    const isValid = await pdfUtils.isValidPdf(pdfBuffer);
     return c.json({ valid: isValid });
 });
 
 // Count Pages
 app.post('/pdf-count-pages', async c => {
-    const body = await helper.parseBodyVariables(c);
-    const pdfBuffer = await helper.getFileAsBuffer(body, 'pdf');
+    const body = await parseBodyVariables(c);
+    const pdfBuffer = await getFileAsBuffer(body, 'pdf');
 
-    const count = await helper.countPdfPages(pdfBuffer);
+    const count = await pdfUtils.countPdfPages(pdfBuffer);
     return c.json({ pages: count });
 });
 
 // PDF Page to JPG
 app.post('/pdf-get-page-as-jpg', async c => {
-    const body = await helper.parseBodyVariables(c);
-    const pdfBuffer = await helper.getFileAsBuffer(body, 'pdf');
+    const body = await parseBodyVariables(c);
+    const pdfBuffer = await getFileAsBuffer(body, 'pdf');
 
     // Parse inputs
     const page = parseInt(body['page'], 10);
@@ -93,7 +124,7 @@ app.post('/pdf-get-page-as-jpg', async c => {
         jpegQuality: body['jpegQuality'] ? parseInt(body['jpegQuality'], 10) : 75
     };
 
-    const imgBuffer = await helper.getPdfPageAsJpg(pdfBuffer, page, options);
+    const imgBuffer = await pdfUtils.getPdfPageAsJpg(pdfBuffer, page, options);
 
     return c.body(imgBuffer, 200, {
         'Content-Type': 'image/jpeg'
@@ -126,7 +157,7 @@ app.post('/pdf-merge', async c => {
         throw new Error("At least two PDF files are required to merge. Provide them as a 'pdfs' array.");
     }
 
-    const mergedBuffer = await helper.mergePdfFiles(buffers);
+    const mergedBuffer = await pdfUtils.mergePdfFiles(buffers);
 
     return c.body(mergedBuffer, 200, {
         'Content-Type': 'application/pdf'
@@ -135,7 +166,7 @@ app.post('/pdf-merge', async c => {
 
 // HTML to PDF
 const handleHtmlToPdf = async (c, returnBase64) => {
-    const body = await helper.parseBodyVariables(c);
+    const body = await parseBodyVariables(c);
     const html = body['html'];
 
     if (!html) throw new Error("Missing POST variable 'html'");
@@ -143,7 +174,7 @@ const handleHtmlToPdf = async (c, returnBase64) => {
     // Handle case where HTML might be uploaded as a file object vs simple string
     const htmlString = typeof html === 'object' && html.text ? await html.text() : String(html);
 
-    const pdfBuffer = await helper.convertHtmlToPdf(htmlString);
+    const pdfBuffer = await pdfUtils.convertHtmlToPdf(htmlString);
 
     if (returnBase64) {
         return c.json(pdfBuffer.toString('base64'));
@@ -159,29 +190,29 @@ app.post('/html-to-pdf-base64', c => handleHtmlToPdf(c, true));
 
 // Store a value to the cache
 app.post('/cache-set', async c => {
-    const body = await helper.parseBodyVariables(c);
+    const body = await parseBodyVariables(c);
     const { namespace, key, expire } = body;
 
     if (!namespace) throw new Error("Missing 'namespace' in POST body");
     if (!key) throw new Error("Missing 'key' in POST body");
 
-    const value = await helper.getFileAsBuffer(body, 'value');
+    const value = await getFileAsBuffer(body, 'value');
 
     // Parse TTL if present (seconds), otherwise undefined (which becomes permanent)
-    await helper.getCacheManager().set(namespace, key, value, expire ? parseInt(expire, 10) : undefined);
+    await cacheUtils.getCacheManager().set(namespace, key, value, expire ? parseInt(expire, 10) : undefined);
 
     return c.json({ success: true });
 });
 
 // Obtain a previously stored value from the cache
 app.post('/cache-get', async c => {
-    const body = await helper.parseBodyVariables(c);
+    const body = await parseBodyVariables(c);
     const { namespace, key } = body;
 
     if (!namespace) throw new Error("Missing 'namespace' in POST body");
     if (!key) throw new Error("Missing 'key' in POST body");
 
-    const entry = helper.getCacheManager().getEntry(namespace, key);
+    const entry = cacheUtils.getCacheManager().getEntry(namespace, key);
 
     if (!entry) {
         return c.json({ error: 'Key not found in specified namespace or has expired' }, 404);
@@ -220,13 +251,13 @@ app.post('/cache-get', async c => {
 
 // Delete a key and its value from the cache
 app.post('/cache-delete-key', async c => {
-    const body = await helper.parseBodyVariables(c);
+    const body = await parseBodyVariables(c);
     const { namespace, key } = body;
 
     if (!namespace) throw new Error("Missing 'namespace' in POST body");
     if (!key) throw new Error("Missing 'key' in POST body");
 
-    const wasDeleted = await helper.getCacheManager().del(namespace, key);
+    const wasDeleted = await cacheUtils.getCacheManager().del(namespace, key);
 
     return c.json({
         success: true,
@@ -236,11 +267,11 @@ app.post('/cache-delete-key', async c => {
 
 // Clear an entire namespace
 app.post('/cache-clear-namespace', async c => {
-    const body = await helper.parseBodyVariables(c);
+    const body = await parseBodyVariables(c);
     const { namespace } = body;
 
     if (!namespace) throw new Error("Missing 'namespace' in POST body");
-    const deletedCount = await helper.getCacheManager().clearNamespace(namespace);
+    const deletedCount = await cacheUtils.getCacheManager().clearNamespace(namespace);
 
     return c.json({
         success: true,
@@ -250,14 +281,14 @@ app.post('/cache-clear-namespace', async c => {
 
 // Delete all keys from the cache - Use with caution!
 app.post('/cache-delete-all', async c => {
-    await helper.getCacheManager().clear();
+    await cacheUtils.getCacheManager().clear();
     return c.json({ success: true });
 });
 
 // Delete all expired keys from the cache
 app.post('/cache-prune', async c => {
     try {
-        const deletedCount = await helper.getCacheManager().prune();
+        const deletedCount = await cacheUtils.getCacheManager().prune();
         return c.json({
             success: true,
             deleted: deletedCount
@@ -273,7 +304,7 @@ app.post('/cache-prune', async c => {
 setInterval(
     async () => {
         try {
-            await helper.getCacheManager().prune();
+            await cacheUtils.getCacheManager().prune();
         } catch (e) {
             console.error('[Cache Prune] Failed:', e);
         }
