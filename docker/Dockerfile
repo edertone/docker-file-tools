@@ -9,7 +9,7 @@ WORKDIR /app
 RUN apk add --no-cache npm
 
 # Copy package files
-COPY package*.json ./
+COPY server/package*.json ./
 
 # Install production dependencies only
 # This avoids installing devDependencies and creates a clean node_modules
@@ -59,7 +59,7 @@ RUN apk add --no-cache \
 COPY --from=builder --chown=converter:converter /app/node_modules ./node_modules
 
 # Copy application files
-COPY --chown=converter:converter package.json server.js server-helper.js start.sh ./
+COPY --chown=converter:converter server/package.json server/server.js server/server-helper.js start.sh ./
 COPY --chown=converter:converter dashboard/ ./dashboard/
 
 # Switch to non-root user

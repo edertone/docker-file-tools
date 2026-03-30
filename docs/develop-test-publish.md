@@ -8,6 +8,10 @@ Open a cmd at the root folder and run:
 docker compose up -d --build
 ```
 
+Launch the dashboard at:
+
+<http://localhost:5001/dashboard>
+
 ## Run tests
 
 - Make sure test packages are installed (npm ci)
