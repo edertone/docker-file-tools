@@ -9,6 +9,24 @@ const cacheUtils = require('./server-cache.js');
 const app = new Hono();
 const PORT = 5001;
 
+// Override console methods to include timestamps on logs
+const origLog = console.log;
+console.log = (...args) => {
+  origLog(new Date().toISOString(), ...args);
+};
+
+const origError = console.error;
+console.error = (...args) => {
+  origError(new Date().toISOString(), ...args);
+};
+
+// Error handling middleware
+app.onError((err, c) => {
+    console.error(err);
+    const status = err.message.startsWith('Missing') || err.message.startsWith('Invalid') ? 400 : 500;
+    return c.json({ error: err.message || 'Processing failed' }, status);
+});
+
 /**
  * Helper to parse body variables regardless of Content-Type.
  * Supports: application/json, multipart/form-data, application/x-www-form-urlencoded
@@ -54,24 +72,6 @@ app.get('/dashboard/:page', async c => {
     } catch (e) {
         return c.notFound();
     }
-});
-
-// Override console methods to include timestamps on logs
-const origLog = console.log;
-console.log = (...args) => {
-  origLog(new Date().toISOString(), ...args);
-};
-
-const origError = console.error;
-console.error = (...args) => {
-  origError(new Date().toISOString(), ...args);
-};
-
-// Error handling middleware
-app.onError((err, c) => {
-    console.error(err);
-    const status = err.message.startsWith('Missing') || err.message.startsWith('Invalid') ? 400 : 500;
-    return c.json({ error: err.message || 'Processing failed' }, status);
 });
 
 // Image to JPG
