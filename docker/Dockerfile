@@ -61,6 +61,7 @@ COPY --from=builder --chown=converter:converter /app/node_modules ./node_modules
 # Copy application files
 COPY --chown=converter:converter server/package.json server/server*.js start.sh ./
 COPY --chown=converter:converter dashboard/ ./dashboard/
+RUN chmod 755 /app/start.sh
 
 # Switch to non-root user
 USER converter
